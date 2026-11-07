@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load pharmagest %}
+{% block titre %}{{ object }}{% endblock %}
+{% block contenu %}
+<div class="pg-entete">
+  <div><h1>{{ object.raison_sociale }}</h1><p class="sous-titre">{{ object.adresse }}{% if object.telephone %} · {{ object.telephone }}{% endif %}{% if object.email %} · {{ object.email }}{% endif %}</p></div>
+  <div class="d-flex gap-2">
+  {% if perms.fournisseurs.change_fournisseur %}
+    <a class="btn btn-primary" href="{% url 'fournisseurs:modifier' object.pk %}">Modifier</a>
+    <form method="post" action="{% url 'fournisseurs:basculer' object.pk %}">{% csrf_token %}<button class="btn btn-outline-secondary">{% if object.actif %}Désactiver{% else %}Réactiver{% endif %}</button></form>
+  {% endif %}</div>
+</div>
+<div class="pg-kpis">
+  <div class="pg-kpi"><div class="valeur">{{ commandes|length }}</div><div class="libelle">commandes</div></div>
+  <div class="pg-kpi"><div class="valeur">{{ total_commande|ar }}</div><div class="libelle">montant commandé (hors annulées)</div></div>
+  <div class="pg-kpi"><div class="valeur">{{ total_recu|ar }}</div><div class="libelle">montant réceptionné</div></div>
+</div>
+<div class="pg-bloc"><h2>Historique des achats</h2>
+  <div class="pg-table-cadre"><table class="table">
+    <thead><tr><th>Commande</th><th>Date</th><th>Statut</th><th class="num">Montant</th></tr></thead>
+    <tbody>{% for c in commandes %}<tr><td><a href="{{ c.get_absolute_url }}">{{ c.numero }}</a></td><td>{{ c.cree_le|date:"d/m/Y" }}</td><td>{{ c.get_statut_display }}</td><td class="num">{{ c.total|ar }}</td></tr>
+    {% empty %}<tr><td colspan="4" class="vide">Aucune commande pour ce fournisseur.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}

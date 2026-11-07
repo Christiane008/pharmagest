@@ -1,0 +1,71 @@
+{% load static %}<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titre %}PharmaGest{% endblock %} · {{ pharmacie.nom|default:"PharmaGest" }}</title>
+  <link href="{% static 'vendor/plex/plex.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'css/pharmagest.css' %}" rel="stylesheet">
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% if user.is_authenticated %}
+<div class="pg-layout">
+  <nav class="pg-nav" aria-label="Menu principal">
+    {% with u=request.resolver_match.namespace n=request.resolver_match.url_name %}
+    <a class="pg-marque" href="{% url 'tableau_de_bord' %}"><span class="pg-croix" aria-hidden="true"></span>PharmaGest</a>
+    {% if perms.ventes.add_vente %}<a class="lien caisse" href="{% url 'ventes:nouvelle' %}">Ouvrir la caisse</a>{% endif %}
+    {% if perms.utilisateurs.voir_tableau_de_bord %}<a class="lien {% if n == 'tableau_de_bord' %}actif{% endif %}" href="{% url 'tableau_de_bord' %}">Tableau de bord</a>{% endif %}
+
+    {% if perms.ventes.view_vente or perms.clients.view_client %}<h2>Ventes</h2>{% endif %}
+    {% if perms.ventes.view_vente %}<a class="lien {% if u == 'ventes' and n == 'liste' or u == 'ventes' and n == 'detail' %}actif{% endif %}" href="{% url 'ventes:liste' %}">Historique des ventes</a>{% endif %}
+    {% if perms.ventes.view_retourvente %}<a class="lien {% if n == 'retours' %}actif{% endif %}" href="{% url 'ventes:retours' %}">Retours</a>{% endif %}
+    {% if perms.clients.view_client %}<a class="lien {% if u == 'clients' %}actif{% endif %}" href="{% url 'clients:liste' %}">Clients</a>{% endif %}
+
+    {% if perms.medicaments.view_medicament %}<h2>Catalogue</h2>{% endif %}
+    {% if perms.medicaments.view_medicament %}<a class="lien {% if u == 'medicaments' and 'categorie' not in n %}actif{% endif %}" href="{% url 'medicaments:liste' %}">Médicaments</a>{% endif %}
+    {% if perms.medicaments.view_categorie %}<a class="lien {% if 'categorie' in n %}actif{% endif %}" href="{% url 'medicaments:categories' %}">Catégories</a>{% endif %}
+
+    {% if perms.stock.view_lotstock or perms.achats.view_commandeachat %}<h2>Approvisionnement</h2>{% endif %}
+    {% if perms.stock.view_lotstock %}
+      <a class="lien {% if u == 'stock' and n == 'etat' %}actif{% endif %}" href="{% url 'stock:etat' %}">État du stock</a>
+      <a class="lien {% if n == 'lots' or n == 'lot' %}actif{% endif %}" href="{% url 'stock:lots' %}">Lots et péremptions</a>
+    {% endif %}
+    {% if perms.stock.view_mouvementstock %}<a class="lien {% if n == 'mouvements' %}actif{% endif %}" href="{% url 'stock:mouvements' %}">Mouvements</a>{% endif %}
+    {% if perms.stock.corriger_stock %}<a class="lien {% if n == 'inventaire' %}actif{% endif %}" href="{% url 'stock:inventaire' %}">Inventaire</a>{% endif %}
+    {% if perms.achats.view_commandeachat %}<a class="lien {% if u == 'achats' %}actif{% endif %}" href="{% url 'achats:commandes' %}">Commandes d'achat</a>{% endif %}
+    {% if perms.fournisseurs.view_fournisseur %}<a class="lien {% if u == 'fournisseurs' %}actif{% endif %}" href="{% url 'fournisseurs:liste' %}">Fournisseurs</a>{% endif %}
+
+    {% if perms.utilisateurs.voir_rapports or perms.auth.view_user %}<h2>Pilotage</h2>{% endif %}
+    {% if perms.utilisateurs.voir_rapports %}<a class="lien {% if n == 'rapports' %}actif{% endif %}" href="{% url 'rapports' %}">Rapports PDF</a>{% endif %}
+    {% if perms.auth.view_user %}<a class="lien {% if u == 'utilisateurs' and n == 'liste' %}actif{% endif %}" href="{% url 'utilisateurs:liste' %}">Utilisateurs</a>{% endif %}
+    {% if perms.utilisateurs.view_journalaudit %}<a class="lien {% if n == 'journal' %}actif{% endif %}" href="{% url 'utilisateurs:journal' %}">Journal d'audit</a>{% endif %}
+    {% if perms.utilisateurs.change_parametrepharmacie %}<a class="lien {% if n == 'parametres' %}actif{% endif %}" href="{% url 'utilisateurs:parametres' %}">Paramètres</a>{% endif %}
+
+    <div class="compte">
+      <div class="fw-semibold text-white">{{ user.get_full_name|default:user.username }}</div>
+      <div class="mb-2">{{ user.groups.all|join:", "|default:"Aucun rôle" }}</div>
+      <a href="{% url 'password_change' %}">Changer mon mot de passe</a>
+      <form method="post" action="{% url 'logout' %}" class="mt-1">{% csrf_token %}
+        <button class="btn btn-link p-0 text-white" type="submit">Se déconnecter</button>
+      </form>
+    </div>
+    {% endwith %}
+  </nav>
+  <main class="pg-contenu">
+    {% for m in messages %}
+      <div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} alert-dismissible" role="alert">
+        {{ m }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+      </div>
+    {% endfor %}
+    {% block contenu %}{% endblock %}
+  </main>
+</div>
+{% else %}
+  {% block public %}{% endblock %}
+{% endif %}
+<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

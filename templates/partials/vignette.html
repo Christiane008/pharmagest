@@ -1,0 +1,1 @@
+{% if med.photo %}<img class="vignette {{ taille|default:'' }}" src="{{ med.photo.url }}" alt="" loading="lazy">{% else %}<span class="vignette {{ taille|default:'' }}" aria-hidden="true"></span>{% endif %}

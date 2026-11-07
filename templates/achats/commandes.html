@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% load pharmagest %}
+{% block titre %}Commandes d'achat{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><h1>Commandes d'achat</h1>
+  {% if perms.achats.add_commandeachat %}<a class="btn btn-primary" href="{% url 'achats:commande_creer' %}">Nouvelle commande</a>{% endif %}</div>
+<form method="get" class="pg-filtres">
+  <input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="N° ou fournisseur" aria-label="Rechercher">
+  <select class="form-select" name="statut" aria-label="Statut"><option value="">Tous les statuts</option>
+    {% for v, l in statuts %}<option value="{{ v }}" {% if request.GET.statut == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+  <button class="btn btn-outline-primary" type="submit">Filtrer</button>
+</form>
+<div class="pg-table-cadre"><table class="table table-hover">
+  <thead><tr><th>N°</th><th>Fournisseur</th><th>Créée le</th><th>Par</th><th>Statut</th><th class="num">Montant</th></tr></thead>
+  <tbody>{% for c in object_list %}<tr><td><a class="fw-semibold" href="{{ c.get_absolute_url }}">{{ c.numero }}</a></td><td>{{ c.fournisseur }}</td><td>{{ c.cree_le|date:"d/m/Y" }}</td><td>{{ c.cree_par }}</td>
+    <td>{% include "achats/_statut.html" with s=c.statut l=c.get_statut_display %}</td><td class="num">{{ c.total|ar }}</td></tr>
+  {% empty %}<tr><td colspan="6" class="vide">Aucune commande. {% if perms.achats.add_commandeachat %}<a href="{% url 'achats:commande_creer' %}">Créer la première</a>{% endif %}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

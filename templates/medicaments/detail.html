@@ -1,0 +1,47 @@
+{% extends "base.html" %}{% load pharmagest %}
+{% block titre %}{{ object }}{% endblock %}
+{% block contenu %}
+<div class="pg-entete">
+  <div><h1>{{ object.nom_commercial }} {{ object.dosage }}</h1>
+    <p class="sous-titre">{{ object.denomination_generique|default:"Pas de dénomination générique" }} · {{ object.categorie }} · {{ object.get_forme_display }}</p></div>
+  <div class="d-flex gap-2">
+    {% if perms.medicaments.change_medicament %}<a class="btn btn-primary" href="{% url 'medicaments:modifier' object.pk %}">Modifier</a>{% endif %}
+    {% if perms.medicaments.delete_medicament and object.est_actif %}
+    <form method="post" action="{% url 'medicaments:supprimer' object.pk %}" onsubmit="return confirm('Supprimer ce médicament ? S\'il a un historique, il sera archivé à la place.')">{% csrf_token %}
+      <button class="btn btn-outline-danger" type="submit">Supprimer ou archiver</button></form>{% endif %}
+  </div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="pg-bloc">
+      {% if object.photo %}<img class="photo-grande mb-3" src="{{ object.photo.url }}" alt="Photo de {{ object }}">{% endif %}
+      {% if perms.medicaments.change_medicament %}<p class="small text-secondary">Remplacez l'illustration par une vraie photo de la boîte via « Modifier ».</p>{% endif %}
+      <dl class="row mb-0 small">
+        <dt class="col-6">Statut</dt><dd class="col-6">{% if object.est_actif %}<span class="pastille">Actif</span>{% else %}<span class="pastille neutre">Archivé</span>{% endif %}</dd>
+        <dt class="col-6">Laboratoire</dt><dd class="col-6">{{ object.laboratoire|default:"—" }}</dd>
+        <dt class="col-6">Code-barres</dt><dd class="col-6">{{ object.code_barres|default:"—" }}</dd>
+        <dt class="col-6">Prix d'achat</dt><dd class="col-6 nombre text-start">{{ object.prix_achat|ar }}</dd>
+        <dt class="col-6">Prix de vente</dt><dd class="col-6 nombre text-start">{{ object.prix_vente|ar }}</dd>
+        <dt class="col-6">Seuil d'alerte</dt><dd class="col-6">{{ object.seuil_alerte }}</dd>
+        <dt class="col-6">Stock vendable</dt><dd class="col-6 fw-semibold">{{ object.stock_vendable }}</dd>
+        <dt class="col-6">Créé le</dt><dd class="col-6">{{ object.cree_le|date:"d/m/Y" }}</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="pg-bloc">
+      <h2>Lots, du plus proche de la péremption au plus lointain</h2>
+      {% if lots %}
+      <div class="pg-table-cadre"><table class="table">
+        <thead><tr><th>Lot</th><th>Péremption</th><th class="num">Reçu</th><th class="num">Disponible</th><th>État</th></tr></thead>
+        <tbody>{% for l in lots %}{% with e=l.etat %}
+          <tr class="etat-{{ e.0 }}"><td><a href="{{ l.get_absolute_url }}">{{ l.numero_lot }}</a></td><td>{{ l.date_peremption|date:"d/m/Y" }}</td>
+          <td class="num">{{ l.quantite_recue }}</td><td class="num">{{ l.quantite_disponible }}</td>
+          <td><span class="pastille {% if e.0 == 'proche' %}ambre{% elif e.0 == 'perime' or e.0 == 'bloque' %}rouge{% elif e.0 == 'epuise' %}neutre{% endif %}">{{ e.1 }}</span></td></tr>
+        {% endwith %}{% endfor %}</tbody>
+      </table></div>
+      {% else %}<p class="vide mb-0">Aucun lot reçu pour l'instant. Le stock arrive par une réception de commande.</p>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

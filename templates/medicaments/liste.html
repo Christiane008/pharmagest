@@ -1,0 +1,52 @@
+{% extends "base.html" %}{% load pharmagest %}
+{% block titre %}Médicaments{% endblock %}
+{% block contenu %}
+<div class="pg-entete">
+  <div><h1>Médicaments</h1><p class="sous-titre">{{ paginator.count }} fiche{{ paginator.count|pluralize }}</p></div>
+  {% if perms.medicaments.add_medicament %}<a class="btn btn-primary" href="{% url 'medicaments:creer' %}">Ajouter un médicament</a>{% endif %}
+</div>
+<form method="get" class="pg-filtres">
+  <input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="Nom, générique ou code-barres" aria-label="Rechercher">
+  <select class="form-select" name="categorie" aria-label="Catégorie">
+    <option value="">Toutes les catégories</option>
+    {% for c in categories %}<option value="{{ c.pk }}" {% if request.GET.categorie == c.pk|stringformat:"s" %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>
+  <select class="form-select" name="statut" aria-label="Statut">
+    <option value="actif">Actifs</option>
+    <option value="archive" {% if request.GET.statut == "archive" %}selected{% endif %}>Archivés</option>
+    <option value="tous" {% if request.GET.statut == "tous" %}selected{% endif %}>Tous</option>
+  </select>
+  <select class="form-select" name="tri" aria-label="Trier">
+    <option value="nom">Nom (A → Z)</option>
+    <option value="-nom" {% if request.GET.tri == "-nom" %}selected{% endif %}>Nom (Z → A)</option>
+    <option value="prix" {% if request.GET.tri == "prix" %}selected{% endif %}>Prix croissant</option>
+    <option value="-prix" {% if request.GET.tri == "-prix" %}selected{% endif %}>Prix décroissant</option>
+    <option value="stock" {% if request.GET.tri == "stock" %}selected{% endif %}>Stock le plus bas</option>
+    <option value="recent" {% if request.GET.tri == "recent" %}selected{% endif %}>Plus récents</option>
+  </select>
+  <button class="btn btn-outline-primary" type="submit">Filtrer</button>
+</form>
+<div class="pg-table-cadre">
+<table class="table table-hover">
+  <thead><tr><th></th><th>Médicament</th><th>Catégorie</th><th>Forme</th><th class="num">Prix d'achat</th><th class="num">Prix de vente</th><th class="num" title="Hors lots périmés ou bloqués">Stock vendable</th><th>Statut</th></tr></thead>
+  <tbody>
+  {% for m in object_list %}
+    <tr class="{% if m.statut == 'archive' %}etat-epuise{% elif m.stock_total == 0 %}etat-rupture{% elif m.stock_total <= m.seuil_alerte %}etat-faible{% else %}etat-ok{% endif %}">
+      <td style="width:56px">{% include "partials/vignette.html" with med=m %}</td>
+      <td><a class="fw-semibold" href="{{ m.get_absolute_url }}">{{ m.nom_commercial }}</a> {{ m.dosage }}
+        <div class="small text-secondary">{{ m.denomination_generique }}{% if m.code_barres %} · {{ m.code_barres }}{% endif %}</div></td>
+      <td>{{ m.categorie }}</td>
+      <td>{{ m.get_forme_display }}</td>
+      <td class="num">{{ m.prix_achat|ar }}</td>
+      <td class="num">{{ m.prix_vente|ar }}</td>
+      <td class="num">{{ m.stock_total }}</td>
+      <td>{% if m.statut == 'archive' %}<span class="pastille neutre">Archivé</span>{% elif m.stock_total == 0 %}<span class="pastille rouge">Rupture</span>{% elif m.stock_total <= m.seuil_alerte %}<span class="pastille ambre">Stock faible</span>{% else %}<span class="pastille">Actif</span>{% endif %}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="8" class="vide">Aucun médicament ne correspond. {% if perms.medicaments.add_medicament %}<a href="{% url 'medicaments:creer' %}">Ajouter un médicament</a>{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% include "partials/pagination.html" %}
+{% endblock %}

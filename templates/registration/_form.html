@@ -1,0 +1,9 @@
+<div class="pg-bloc" style="max-width: 460px">
+  <h1 class="h5 mb-3">{{ titre }}</h1>
+  {% if validlink is not False %}
+  <form method="post">{% csrf_token %}
+    {% include "partials/champs.html" %}
+    <button class="btn btn-primary" type="submit">{{ bouton }}</button>
+  </form>
+  {% else %}<p>Ce lien de réinitialisation n'est plus valide. Demandez-en un nouveau.</p>{% endif %}
+</div>

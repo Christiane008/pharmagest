@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block titre %}Journal d'audit{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><div><h1>Journal d'audit</h1><p class="sous-titre">Opérations sensibles, non modifiables.</p></div></div>
+{% include "partials/recherche.html" with placeholder="Action, objet ou utilisateur" %}
+<div class="pg-table-cadre"><table class="table table-sm">
+  <thead><tr><th>Date</th><th>Utilisateur</th><th>Action</th><th>Objet</th><th>Détails</th></tr></thead>
+  <tbody>{% for j in object_list %}<tr><td class="text-nowrap">{{ j.date|date:"d/m/Y H:i:s" }}</td><td>{{ j.utilisateur }}</td><td><span class="pastille neutre">{{ j.action }}</span></td>
+    <td>{{ j.objet_type }} {{ j.objet_repr }}</td><td class="small text-secondary">{% for k, v in j.details.items %}{{ k }} : {{ v }}{% if not forloop.last %} · {% endif %}{% endfor %}</td></tr>
+  {% empty %}<tr><td colspan="5" class="vide">Aucune entrée.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

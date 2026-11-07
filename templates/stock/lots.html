@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titre %}Lots et péremptions{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><h1>Lots et péremptions</h1>
+  {% if perms.utilisateurs.voir_rapports %}<a class="btn btn-outline-primary" href="{% url 'pdf_peremptions' %}" target="_blank">Liste des péremptions (PDF)</a>{% endif %}</div>
+<form method="get" class="pg-filtres">
+  <input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="Médicament ou n° de lot" aria-label="Rechercher">
+  <select class="form-select" name="etat" aria-label="État">
+    <option value="en_stock">Lots en stock</option>
+    <option value="proches" {% if request.GET.etat == "proches" %}selected{% endif %}>Péremption proche</option>
+    <option value="perimes" {% if request.GET.etat == "perimes" %}selected{% endif %}>Périmés encore en stock</option>
+    <option value="bloques" {% if request.GET.etat == "bloques" %}selected{% endif %}>Bloqués</option>
+    <option value="tous" {% if request.GET.etat == "tous" %}selected{% endif %}>Tous, y compris épuisés</option>
+  </select>
+  <button class="btn btn-outline-primary" type="submit">Filtrer</button>
+</form>
+<div class="pg-table-cadre"><table class="table table-hover">
+  <thead><tr><th>Médicament</th><th>Lot</th><th>Péremption</th><th class="num">Jours restants</th><th class="num">Disponible</th><th>État</th></tr></thead>
+  <tbody>{% for l in object_list %}{% with e=l.etat %}
+    <tr class="etat-{{ e.0 }}"><td><div class="produit">{% include "partials/vignette.html" with med=l.medicament taille="petite" %}<span>{{ l.medicament }}</span></div></td><td><a class="fw-semibold" href="{{ l.get_absolute_url }}">{{ l.numero_lot }}</a></td>
+      <td>{{ l.date_peremption|date:"d/m/Y" }}</td><td class="num">{{ l.jours_avant_peremption }}</td><td class="num">{{ l.quantite_disponible }}</td>
+      <td><span class="pastille {% if e.0 == 'proche' %}ambre{% elif e.0 == 'perime' or e.0 == 'bloque' %}rouge{% elif e.0 == 'epuise' %}neutre{% endif %}">{{ e.1 }}</span></td></tr>
+  {% endwith %}{% empty %}<tr><td colspan="6" class="vide">Aucun lot dans cette sélection.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

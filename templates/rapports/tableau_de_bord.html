@@ -1,0 +1,70 @@
+{% extends "base.html" %}{% load pharmagest static %}
+{% block titre %}Tableau de bord{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><div><h1>Tableau de bord</h1><p class="sous-titre">{% now "l j F Y" %}</p></div>
+  {% if stats %}<form method="get" class="d-flex gap-2 align-items-end">
+    <div><label class="form-label small mb-0" for="d">Du</label><input class="form-control form-control-sm" type="date" id="d" name="debut" value="{{ debut|date:'Y-m-d' }}"></div>
+    <div><label class="form-label small mb-0" for="f">au</label><input class="form-control form-control-sm" type="date" id="f" name="fin" value="{{ fin|date:'Y-m-d' }}"></div>
+    <button class="btn btn-sm btn-outline-primary" type="submit">Appliquer</button></form>{% endif %}
+</div>
+<div class="pg-kpis">
+  <a class="pg-kpi" href="{% url 'medicaments:liste' %}"><div class="valeur">{{ kpi.medicaments_actifs }}</div><div class="libelle">médicaments actifs</div></a>
+  {% if perms.ventes.view_vente %}<a class="pg-kpi" href="{% url 'ventes:liste' %}?jour=aujourdhui"><div class="valeur">{{ kpi.ca_jour|ar }}</div><div class="libelle">ventes du jour ({{ kpi.nb_ventes_jour }} ticket{{ kpi.nb_ventes_jour|pluralize }})</div></a>{% endif %}
+  {% if perms.stock.view_lotstock %}
+  <a class="pg-kpi {% if kpi.stocks_faibles %}ambre{% endif %}" href="{% url 'stock:etat' %}?filtre=faible"><div class="valeur">{{ kpi.stocks_faibles }}</div><div class="libelle">stocks au seuil d'alerte ou en dessous</div></a>
+  <a class="pg-kpi {% if kpi.peremptions_proches %}ambre{% endif %}" href="{% url 'stock:lots' %}?etat=proches"><div class="valeur">{{ kpi.peremptions_proches }}</div><div class="libelle">lots proches de la péremption</div></a>
+  {% if kpi.lots_perimes %}<a class="pg-kpi rouge" href="{% url 'stock:lots' %}?etat=perimes"><div class="valeur">{{ kpi.lots_perimes }}</div><div class="libelle">lots périmés encore en stock</div></a>{% endif %}
+  {% endif %}
+</div>
+
+{% if stats %}
+<div class="row g-3 mb-3">
+  <div class="col-xl-8"><div class="pg-bloc h-100"><h2>Ventes par jour du {{ debut|date:"d/m" }} au {{ fin|date:"d/m/Y" }}</h2>
+    <canvas id="graphe-ventes" height="120" aria-label="Chiffre d'affaires par jour" role="img"></canvas></div></div>
+  <div class="col-xl-4"><div class="pg-bloc h-100"><h2>Sur la période</h2>
+    <dl class="pg-ticket row mb-0">
+      <dt class="col-7">Chiffre d'affaires</dt><dd class="col-5">{{ ca|ar }}</dd>
+      <dt class="col-7">Remboursements</dt><dd class="col-5">−{{ remboursements|ar }}</dd>
+      <dt class="col-7 fw-semibold text-body">Chiffre d'affaires net</dt><dd class="col-5 fw-semibold">{{ ca_net|ar }}</dd>
+      {% for mode, v in encaissements.items %}{% if v %}<dt class="col-7">Encaissé · {{ mode }}</dt><dd class="col-5">{{ v|ar }}</dd>{% endif %}{% endfor %}
+      <dt class="col-7">Marge commerciale estimée</dt><dd class="col-5">{{ marge|ar }}</dd>
+      <dt class="col-7">Achats réceptionnés ({{ nb_receptions }})</dt><dd class="col-5">{{ achats|ar }}</dd>
+    </dl>
+    <p class="small text-secondary mt-2 mb-0">La marge est le prix de vente moins le coût d'achat des lots vendus. Ce n'est pas un bénéfice net : les charges de la pharmacie n'y sont pas déduites.</p>
+  </div></div>
+</div>
+<div class="pg-bloc mb-3"><h2>Produits les plus vendus</h2>
+  <div class="pg-table-cadre"><table class="table table-sm"><thead><tr><th>Médicament</th><th class="num">Quantité</th><th class="num">Montant</th></tr></thead>
+  <tbody>{% for t in top %}<tr><td>{{ t.medicament__nom_commercial }} {{ t.medicament__dosage }}</td><td class="num">{{ t.quantite }}</td><td class="num">{{ t.montant|ar }}</td></tr>
+  {% empty %}<tr><td colspan="3" class="vide">Aucune vente sur la période.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endif %}
+
+{% if alertes is not None %}
+<div class="row g-3">
+  <div class="col-lg-6"><div class="pg-bloc h-100"><h2>Alertes de stock</h2>
+    <div class="pg-table-cadre"><table class="table table-sm"><thead><tr><th>Médicament</th><th class="num">Vendable</th><th class="num">Seuil</th></tr></thead>
+    <tbody>{% for m in alertes %}<tr class="{% if m.stock_vendable == 0 %}etat-rupture{% else %}etat-faible{% endif %}"><td><div class="produit">{% include "partials/vignette.html" with med=m taille="petite" %}<a href="{{ m.get_absolute_url }}">{{ m }}</a></div></td><td class="num">{{ m.stock_vendable }}</td><td class="num">{{ m.seuil_alerte }}</td></tr>
+    {% empty %}<tr><td colspan="3" class="vide">Aucun stock sous le seuil.</td></tr>{% endfor %}</tbody></table></div></div></div>
+  <div class="col-lg-6"><div class="pg-bloc h-100"><h2>Péremptions dans les {{ lots.jours }} jours</h2>
+    <div class="pg-table-cadre"><table class="table table-sm"><thead><tr><th>Médicament</th><th>Lot</th><th>Péremption</th><th class="num">Qté</th></tr></thead>
+    <tbody>{% for l in lots.perimes|slice:":5" %}<tr class="etat-perime"><td>{{ l.medicament }}</td><td><a href="{{ l.get_absolute_url }}">{{ l.numero_lot }}</a></td><td><span class="pastille rouge">périmé {{ l.date_peremption|date:"d/m/Y" }}</span></td><td class="num">{{ l.quantite_disponible }}</td></tr>{% endfor %}
+    {% for l in lots.proches|slice:":8" %}<tr class="etat-proche"><td>{{ l.medicament }}</td><td><a href="{{ l.get_absolute_url }}">{{ l.numero_lot }}</a></td><td>{{ l.date_peremption|date:"d/m/Y" }}</td><td class="num">{{ l.quantite_disponible }}</td></tr>
+    {% empty %}{% if not lots.perimes %}<tr><td colspan="4" class="vide">Aucun lot à surveiller.</td></tr>{% endif %}{% endfor %}</tbody></table></div></div></div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}{% if stats %}
+{{ serie|json_script:"donnees-ventes" }}
+<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+<script>
+  const serie = JSON.parse(document.getElementById('donnees-ventes').textContent);
+  new Chart(document.getElementById('graphe-ventes'), {
+    type: 'bar',
+    data: { labels: serie.map(s => s.jour.slice(8, 10) + '/' + s.jour.slice(5, 7)),
+            datasets: [{ label: "Chiffre d'affaires (Ar)", data: serie.map(s => s.total), backgroundColor: '#0F5C4A', borderRadius: 3 }] },
+    options: { plugins: { legend: { display: false },
+               tooltip: { callbacks: { label: c => c.parsed.y.toLocaleString('fr-FR') + ' Ar' } } },
+               scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('fr-FR') } }, x: { grid: { display: false } } } }
+  });
+</script>
+{% endif %}{% endblock %}

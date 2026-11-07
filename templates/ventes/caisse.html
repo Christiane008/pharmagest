@@ -1,0 +1,74 @@
+{% extends "base.html" %}{% load pharmagest %}
+{% block titre %}Caisse{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><div><h1>Caisse</h1><p class="sous-titre">{{ vente }} · ouverte à {{ vente.cree_le|time:"H:i" }}</p></div>
+  <form method="post" action="{% url 'ventes:abandonner' vente.pk %}" onsubmit="return confirm('Abandonner cette vente ? Le panier sera vidé.')">{% csrf_token %}<button class="btn btn-outline-secondary">Abandonner la vente</button></form></div>
+<div class="pg-caisse">
+  <div>
+    <div class="pg-bloc">
+      <div class="row g-3">
+        <form method="post" class="col-md-6 d-flex gap-2 align-items-end">{% csrf_token %}<input type="hidden" name="action" value="ajouter">
+          <div class="flex-grow-1"><label class="form-label" for="cb">Scanner un code-barres</label><input class="form-control" id="cb" name="code_barres" autofocus autocomplete="off"></div>
+          <div style="width:80px"><label class="form-label" for="qcb">Qté</label><input class="form-control" id="qcb" name="quantite" type="number" min="1" value="1"></div>
+          <button class="btn btn-primary" type="submit">Ajouter</button></form>
+        <form method="get" class="col-md-6 d-flex gap-2 align-items-end">
+          <div class="flex-grow-1"><label class="form-label" for="rq">Ou rechercher par nom</label><input class="form-control" id="rq" type="search" name="q" value="{{ q }}"></div>
+          <button class="btn btn-outline-primary" type="submit">Chercher</button></form>
+      </div>
+      {% if q %}
+      <div class="pg-table-cadre mt-3"><table class="table table-sm">
+        <thead><tr><th>Médicament</th><th class="num">Prix</th><th class="num">Vendable</th><th style="width:190px"></th></tr></thead>
+        <tbody>{% for m in resultats %}
+          <tr class="{% if m.stock_vendable == 0 %}etat-rupture{% elif m.stock_vendable <= m.seuil_alerte %}etat-faible{% else %}etat-ok{% endif %}"><td><div class="produit">{% include "partials/vignette.html" with med=m taille="grande" %}<div>{{ m }}<div class="small text-secondary">{{ m.denomination_generique }}</div></div></div></td><td class="num">{{ m.prix_vente|ar }}</td><td class="num">{{ m.stock_vendable }}</td>
+          <td>{% if m.stock_vendable %}<form method="post" class="d-flex gap-1">{% csrf_token %}<input type="hidden" name="action" value="ajouter"><input type="hidden" name="medicament_id" value="{{ m.pk }}">
+            <input class="form-control form-control-sm" style="width:70px" type="number" name="quantite" min="1" max="{{ m.stock_vendable }}" value="1" aria-label="Quantité"><button class="btn btn-sm btn-primary">Ajouter</button></form>{% else %}<span class="pastille rouge">Indisponible</span>{% endif %}</td></tr>
+        {% empty %}<tr><td colspan="4" class="vide">Aucun médicament actif ne correspond à « {{ q }} ».</td></tr>{% endfor %}</tbody>
+      </table></div>{% endif %}
+    </div>
+    <div class="pg-bloc"><h2>Panier</h2>
+      <div class="pg-table-cadre"><table class="table">
+        <thead><tr><th>Médicament</th><th>Lot délivré</th><th class="num">Qté</th><th class="num">P.U.</th><th class="num">Sous-total</th><th></th></tr></thead>
+        <tbody>{% regroup lignes by medicament as groupes %}{% for g in groupes %}{% for l in g.list %}
+          <tr class="etat-{{ l.lot.etat.0 }}"><td>{% if forloop.first %}<div class="produit">{% include "partials/vignette.html" with med=l.medicament %}<span>{{ l.medicament }}</span></div>{% endif %}</td><td>{{ l.lot.numero_lot }} <span class="small text-secondary">exp. {{ l.lot.date_peremption|date:"m/Y" }}</span></td>
+            <td class="num">{{ l.quantite }}</td><td class="num">{{ l.prix_unitaire|ar }}</td><td class="num">{{ l.sous_total|ar }}</td>
+            <td class="text-end">{% if forloop.first %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="retirer"><input type="hidden" name="medicament_id" value="{{ l.medicament_id }}"><button class="btn btn-sm btn-link text-danger">Retirer</button></form>{% endif %}</td></tr>
+        {% endfor %}{% empty %}<tr><td colspan="6" class="vide">Le panier est vide. Scannez un code-barres ou recherchez un médicament.</td></tr>{% endfor %}</tbody>
+      </table></div>
+      <p class="small text-secondary mt-2 mb-0">Les lots sont choisis automatiquement : la péremption la plus proche d'abord (FEFO). Les lots périmés ou bloqués ne sont jamais proposés.</p>
+    </div>
+  </div>
+  <aside class="pg-bloc">
+    <div class="text-secondary">Total à payer</div>
+    <div class="pg-total">{{ vente.total|ar }}</div>
+    <dl class="pg-ticket row mb-3">
+      <dt class="col-7">Payé (confirmé)</dt><dd class="col-5">{{ vente.montant_paye|ar }}</dd>
+      <dt class="col-7">Reste à payer</dt><dd class="col-5 fw-semibold">{{ vente.reste_a_payer|ar }}</dd>
+      {% if vente.monnaie_a_rendre %}<dt class="col-7">Monnaie à rendre</dt><dd class="col-5 fw-semibold text-success">{{ vente.monnaie_a_rendre|ar }}</dd>{% endif %}
+    </dl>
+    <form method="post" class="mb-3">{% csrf_token %}<input type="hidden" name="action" value="client">
+      <label class="form-label" for="id_client">Client</label>
+      <div class="d-flex gap-2"><select class="form-select" name="client" id="id_client">{% for v, l in client_form.client.field.choices %}<option value="{{ v }}" {% if vente.client_id|stringformat:"s" == v|stringformat:"s" %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+      <button class="btn btn-outline-primary">OK</button></div></form>
+    {% if paiements %}<ul class="list-unstyled small mb-3">{% for p in paiements %}
+      <li class="d-flex justify-content-between align-items-center border-bottom py-1"><span>{{ p.get_mode_display }} {% if p.reference %}<span class="text-secondary">réf. {{ p.reference }}</span>{% endif %}</span>
+        <span class="nombre">{{ p.montant|ar }}
+        {% if p.statut == 'en_attente' %}<form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="paiement_id" value="{{ p.pk }}"><button class="btn btn-sm btn-outline-primary py-0" name="action" value="confirmer">Confirmer</button><button class="btn btn-sm btn-link text-danger py-0" name="action" value="echouer">Échec</button></form>
+        {% else %}<span class="pastille {% if p.statut == 'echoue' %}rouge{% endif %}">{{ p.get_statut_display }}</span>{% endif %}</span></li>{% endfor %}</ul>{% endif %}
+    {% if vente.total and vente.reste_a_payer %}
+    <form method="post" class="mb-3" novalidate>{% csrf_token %}<input type="hidden" name="action" value="payer">
+      <div class="row g-2">
+        <div class="col-6"><label class="form-label" for="pm">Mode</label><select class="form-select" id="pm" name="mode">{% for v, l in paiement_form.mode.field.choices %}<option value="{{ v }}" {% if paiement_form.mode.value == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+        <div class="col-6"><label class="form-label" for="pmt">Montant reçu</label><input class="form-control" id="pmt" type="number" step="1" min="1" name="montant" value="{{ paiement_form.montant.value|default:''|floatformat:0 }}"></div>
+        <div class="col-12"><label class="form-label" for="pref">Référence (mobile money)</label><input class="form-control" id="pref" name="reference" value="{{ paiement_form.reference.value|default:'' }}"></div>
+      </div>
+      {% for f in paiement_form %}{% for e in f.errors %}<div class="errorlist">{{ e }}</div>{% endfor %}{% endfor %}
+      <button class="btn btn-outline-primary w-100 mt-2" type="submit">Encaisser</button>
+    </form>{% endif %}
+    {% if perms.ventes.valider_vente %}
+    <form method="post" onsubmit="this.querySelector('button').disabled=true;">{% csrf_token %}<input type="hidden" name="action" value="valider">
+      <button class="btn btn-primary btn-lg w-100" type="submit" {% if not lignes or vente.reste_a_payer %}disabled{% endif %}>Valider la vente</button></form>
+    {% if lignes and vente.reste_a_payer %}<p class="small text-secondary mt-2 mb-0">Encaissez le total pour pouvoir valider.</p>{% endif %}
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

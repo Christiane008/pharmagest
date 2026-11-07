@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titre %}Rapports{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><div><h1>Rapports PDF</h1><p class="sous-titre">Les reçus, factures, bons de commande et de réception s'impriment depuis chaque fiche.</p></div></div>
+<div class="row g-3">
+  <div class="col-md-6"><div class="pg-bloc h-100"><h2>Stock</h2>
+    <p class="text-secondary small">État actuel : quantités vendables, seuils et valeur au prix d'achat.</p>
+    <a class="btn btn-outline-primary" href="{% url 'pdf_rapport_stock' %}" target="_blank">Rapport de stock</a>
+    <a class="btn btn-outline-primary" href="{% url 'pdf_peremptions' %}" target="_blank">Péremptions</a></div></div>
+  {% if perms.ventes.view_vente or perms.achats.view_commandeachat %}
+  <div class="col-md-6"><div class="pg-bloc h-100"><h2>Ventes et achats sur une période</h2>
+    <form method="get" class="row g-2 align-items-end" target="_blank">
+      <div class="col-6"><label class="form-label" for="d">Du</label><input class="form-control" type="date" id="d" name="debut" value="{{ debut|date:'Y-m-d' }}"></div>
+      <div class="col-6"><label class="form-label" for="f">Au</label><input class="form-control" type="date" id="f" name="fin" value="{{ fin|date:'Y-m-d' }}"></div>
+      <div class="col-12 d-flex gap-2 mt-3">
+        {% if perms.ventes.view_vente %}<button class="btn btn-primary" formaction="{% url 'pdf_rapport_ventes' %}">Rapport des ventes</button>{% endif %}
+        {% if perms.achats.view_commandeachat %}<button class="btn btn-outline-primary" formaction="{% url 'pdf_rapport_achats' %}">Rapport des achats</button>{% endif %}</div>
+    </form></div></div>
+  {% endif %}
+</div>
+{% endblock %}

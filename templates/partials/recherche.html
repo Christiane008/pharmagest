@@ -1,0 +1,5 @@
+<form method="get" class="pg-filtres" role="search">
+  <input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="{{ placeholder|default:'Rechercher' }}" aria-label="{{ placeholder|default:'Rechercher' }}">
+  <button class="btn btn-outline-primary" type="submit">Rechercher</button>
+  {% if request.GET.q %}<a class="btn btn-link" href="?">Effacer</a>{% endif %}
+</form>

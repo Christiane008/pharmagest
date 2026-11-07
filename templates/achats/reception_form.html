@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titre %}Réception {{ commande.numero }}{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><div><h1>Réceptionner {{ commande.numero }}</h1>
+  <p class="sous-titre">{{ commande.fournisseur }} · saisissez ce qui est réellement arrivé. Mettez 0 pour un produit non livré.</p></div></div>
+<form method="post" novalidate>{% csrf_token %}
+  <div class="pg-table-cadre"><table class="table">
+    <thead><tr><th>Médicament</th><th class="num">Reste à recevoir</th><th style="width:120px">Reçu</th><th style="width:180px">N° de lot</th><th style="width:180px">Péremption</th></tr></thead>
+    <tbody>{% for l, f in lignes %}<tr>
+      <td><div class="produit">{% include "partials/vignette.html" with med=l.medicament taille="petite" %}<span>{{ l.medicament }}</span></div>{% for e in f.non_field_errors %}<div class="errorlist">{{ e }}</div>{% endfor %}</td><td class="num">{{ l.reste_a_recevoir }}</td>
+      <td><input class="form-control" type="number" min="0" name="{{ f.quantite.html_name }}" value="{{ f.quantite.value|default:'' }}" aria-label="Quantité reçue">{% for e in f.quantite.errors %}<div class="errorlist">{{ e }}</div>{% endfor %}</td>
+      <td><input class="form-control" name="{{ f.numero_lot.html_name }}" value="{{ f.numero_lot.value|default:'' }}" aria-label="Numéro de lot">{% for e in f.numero_lot.errors %}<div class="errorlist">{{ e }}</div>{% endfor %}</td>
+      <td><input class="form-control" type="date" name="{{ f.date_peremption.html_name }}" value="{{ f.date_peremption.value|default:''|date:'Y-m-d'|default:f.date_peremption.value|default:'' }}" aria-label="Date de péremption">{% for e in f.date_peremption.errors %}<div class="errorlist">{{ e }}</div>{% endfor %}</td>
+    </tr>{% empty %}<tr><td colspan="5" class="vide">Tout a déjà été reçu.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <div class="d-flex gap-2 mt-3"><button class="btn btn-primary" type="submit">Enregistrer la réception</button><a class="btn btn-outline-secondary" href="{{ commande.get_absolute_url }}">Annuler</a></div>
+</form>
+{% endblock %}

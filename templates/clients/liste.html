@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titre %}Clients{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><div><h1>Clients</h1><p class="sous-titre">Seules les données utiles à la vente sont conservées.</p></div>
+  {% if perms.clients.add_client %}<a class="btn btn-primary" href="{% url 'clients:creer' %}">Ajouter un client</a>{% endif %}</div>
+{% include "partials/recherche.html" with placeholder="Nom ou téléphone" %}
+<div class="pg-table-cadre"><table class="table table-hover">
+  <thead><tr><th>Client</th><th>Téléphone</th><th>Depuis</th><th>Statut</th></tr></thead>
+  <tbody>{% for c in object_list %}<tr><td><a class="fw-semibold" href="{{ c.get_absolute_url }}">{{ c }}</a></td><td>{{ c.telephone }}</td><td>{{ c.cree_le|date:"d/m/Y" }}</td>
+    <td>{% if c.actif %}<span class="pastille">Actif</span>{% else %}<span class="pastille neutre">Inactif</span>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="4" class="vide">Aucun client trouvé.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

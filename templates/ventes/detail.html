@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% load pharmagest %}
+{% block titre %}{{ vente.numero }}{% endblock %}
+{% block contenu %}
+<div class="pg-entete">
+  <div><h1>Vente {{ vente.numero }}</h1>
+    <p class="sous-titre">{{ vente.valide_le|date:"d/m/Y H:i" }} · {{ vente.client|default:"Vente comptoir" }} · caissier {{ vente.caissier }} ·
+    <span class="pastille {% if vente.statut == 'annulee' %}rouge{% endif %}">{{ vente.get_statut_display }}</span></p></div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-primary" href="{% url 'pdf_recu' vente.pk %}" target="_blank">Imprimer le reçu</a>
+    <a class="btn btn-outline-primary" href="{% url 'pdf_facture' vente.pk %}" target="_blank">Facture</a>
+  </div>
+</div>
+{% if vente.statut == 'annulee' %}<div class="alert alert-danger">Annulée le {{ vente.annule_le|date:"d/m/Y H:i" }} par {{ vente.annule_par }} : {{ vente.motif_annulation }}. Le stock a été réintégré par des mouvements d'annulation.</div>{% endif %}
+<div class="pg-bloc"><h2>Articles</h2>
+  <div class="pg-table-cadre"><table class="table">
+    <thead><tr><th>Médicament</th><th>Lot</th><th class="num">Qté</th><th class="num">Retournée</th><th class="num">P.U. appliqué</th><th class="num">Sous-total</th>{% if vente.statut == 'validee' and perms.ventes.add_retourvente %}<th>Retour</th>{% endif %}</tr></thead>
+    <tbody>{% for l in lignes %}<tr><td><div class="produit">{% include "partials/vignette.html" with med=l.medicament taille="petite" %}<span>{{ l.medicament }}</span></div></td><td><a href="{{ l.lot.get_absolute_url }}">{{ l.lot.numero_lot }}</a></td><td class="num">{{ l.quantite }}</td><td class="num">{{ l.quantite_retournee }}</td>
+      <td class="num">{{ l.prix_unitaire|ar }}</td><td class="num">{{ l.sous_total|ar }}</td>
+      {% if vente.statut == 'validee' and perms.ventes.add_retourvente %}<td>{% if l.quantite_retournable %}
+        <form method="post" action="{% url 'ventes:retour_demander' vente.pk %}" class="d-flex gap-1">{% csrf_token %}<input type="hidden" name="ligne" value="{{ l.pk }}">
+          <input class="form-control form-control-sm" style="width:64px" type="number" name="quantite" min="1" max="{{ l.quantite_retournable }}" value="1" aria-label="Quantité retournée">
+          <input class="form-control form-control-sm" name="motif" placeholder="Motif" required aria-label="Motif du retour"><button class="btn btn-sm btn-outline-primary">Demander</button></form>
+      {% else %}<span class="text-secondary small">—</span>{% endif %}</td>{% endif %}</tr>{% endfor %}
+    <tr><td colspan="5" class="text-end fw-semibold">Total</td><td class="num fw-semibold">{{ vente.total|ar }}</td>{% if vente.statut == 'validee' and perms.ventes.add_retourvente %}<td></td>{% endif %}</tr></tbody>
+  </table></div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-6"><div class="pg-bloc h-100"><h2>Paiements</h2>
+    <ul class="list-unstyled mb-0">{% for p in paiements %}<li class="d-flex justify-content-between border-bottom py-1"><span>{{ p.get_mode_display }} {% if p.reference %}<span class="text-secondary small">réf. {{ p.reference }}</span>{% endif %} <span class="pastille {% if p.statut != 'confirme' %}neutre{% endif %}">{{ p.get_statut_display }}</span></span><span class="nombre">{{ p.montant|ar }}</span></li>{% endfor %}
+    {% if vente.monnaie_a_rendre %}<li class="d-flex justify-content-between py-1"><span>Monnaie rendue</span><span class="nombre">{{ vente.monnaie_a_rendre|ar }}</span></li>{% endif %}</ul></div></div>
+  <div class="col-lg-6"><div class="pg-bloc h-100"><h2>Retours</h2>
+    {% for r in retours %}<div class="border-bottom py-1 small"><strong>{{ r.ligne_vente.medicament }} × {{ r.quantite }}</strong> — {{ r.motif }}
+      <span class="pastille {% if r.statut == 'demande' %}ambre{% elif r.statut == 'refuse' %}rouge{% endif %}">{{ r.get_statut_display }}</span>
+      {% if r.statut == 'valide' %}<span class="text-secondary">remboursé {{ r.montant_rembourse|ar }}{% if r.remise_en_stock %}, remis en stock{% endif %}</span>{% endif %}
+      {% if r.statut == 'demande' and perms.ventes.valider_retour %}{% include "ventes/_traiter_retour.html" with suivant=request.path %}{% endif %}</div>
+    {% empty %}<p class="text-secondary mb-0">Aucun retour sur cette vente.</p>{% endfor %}</div></div>
+</div>
+{% if vente.statut == 'validee' and perms.ventes.annuler_vente %}
+<div class="pg-bloc mt-3"><h2>Annuler la vente</h2>
+  <p class="small text-secondary">La vente reste dans l'historique ; le stock est réintégré par des mouvements d'annulation tracés.</p>
+  <form method="post" action="{% url 'ventes:annuler' vente.pk %}" class="d-flex gap-2" onsubmit="return confirm('Annuler définitivement cette vente ?')">{% csrf_token %}
+    <input class="form-control" name="motif" placeholder="Motif de l'annulation" required aria-label="Motif de l'annulation"><button class="btn btn-outline-danger" type="submit">Annuler la vente</button></form>
+</div>{% endif %}
+{% endblock %}

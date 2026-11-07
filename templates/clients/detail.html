@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% load pharmagest %}
+{% block titre %}{{ object }}{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><div><h1>{{ object }}</h1><p class="sous-titre">{{ object.telephone|default:"Pas de téléphone" }}</p></div>
+  {% if perms.clients.change_client %}<a class="btn btn-primary" href="{% url 'clients:modifier' object.pk %}">Modifier</a>{% endif %}</div>
+{% if ventes is not None %}
+<div class="pg-bloc"><h2>Achats du client</h2>
+  <div class="pg-table-cadre"><table class="table">
+    <thead><tr><th>Vente</th><th>Date</th><th>Statut</th><th class="num">Total</th></tr></thead>
+    <tbody>{% for v in ventes %}<tr><td><a href="{{ v.get_absolute_url }}">{{ v.numero }}</a></td><td>{{ v.valide_le|date:"d/m/Y H:i" }}</td><td>{{ v.get_statut_display }}</td><td class="num">{{ v.total|ar }}</td></tr>
+    {% empty %}<tr><td colspan="4" class="vide">Aucun achat enregistré.</td></tr>{% endfor %}</tbody>
+  </table></div></div>
+{% endif %}
+{% endblock %}

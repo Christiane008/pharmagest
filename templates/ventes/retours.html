@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% load pharmagest %}
+{% block titre %}Retours{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><div><h1>Retours de vente</h1><p class="sous-titre">Un retour ne supprime jamais la vente : il la compense.</p></div></div>
+<form method="get" class="pg-filtres"><select class="form-select" name="statut" aria-label="Statut" onchange="this.form.submit()">
+  <option value="demande">À traiter</option><option value="valide" {% if request.GET.statut == "valide" %}selected{% endif %}>Validés</option>
+  <option value="refuse" {% if request.GET.statut == "refuse" %}selected{% endif %}>Refusés</option><option value="" {% if request.GET.statut == "" %}selected{% endif %}>Tous</option></select></form>
+<div class="pg-table-cadre"><table class="table">
+  <thead><tr><th>Demandé le</th><th>Vente</th><th>Médicament</th><th class="num">Qté</th><th>Motif</th><th>Par</th><th>Décision</th></tr></thead>
+  <tbody>{% for r in object_list %}<tr><td>{{ r.demande_le|date:"d/m/Y H:i" }}</td><td><a href="{% url 'ventes:detail' r.ligne_vente.vente_id %}">{{ r.ligne_vente.vente }}</a></td>
+    <td>{{ r.ligne_vente.medicament }}</td><td class="num">{{ r.quantite }}</td><td>{{ r.motif }}</td><td>{{ r.demande_par }}</td>
+    <td>{% if r.statut == 'demande' %}{% if perms.ventes.valider_retour %}{% include "ventes/_traiter_retour.html" with suivant=request.get_full_path %}{% else %}<span class="pastille ambre">En attente</span>{% endif %}
+      {% else %}<span class="pastille {% if r.statut == 'refuse' %}rouge{% endif %}">{{ r.get_statut_display }}</span> <span class="small text-secondary">{{ r.valide_par }}{% if r.statut == 'valide' %} · {{ r.montant_rembourse|ar }}{% endif %}</span>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="7" class="vide">Aucun retour dans cette sélection.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

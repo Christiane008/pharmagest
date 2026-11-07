@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load pharmagest %}
+{% block titre %}État du stock{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><div><h1>État du stock</h1><p class="sous-titre">Le stock vendable exclut les lots périmés et bloqués.</p></div>
+  {% if perms.utilisateurs.voir_rapports %}<a class="btn btn-outline-primary" href="{% url 'pdf_rapport_stock' %}" target="_blank">Rapport de stock (PDF)</a>{% endif %}</div>
+<form method="get" class="pg-filtres">
+  <input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="Nom ou code-barres" aria-label="Rechercher">
+  <select class="form-select" name="filtre" aria-label="Filtre">
+    <option value="">Tous les médicaments actifs</option>
+    <option value="faible" {% if request.GET.filtre == "faible" %}selected{% endif %}>Sous le seuil d'alerte</option>
+    <option value="rupture" {% if request.GET.filtre == "rupture" %}selected{% endif %}>En rupture</option>
+  </select>
+  <button class="btn btn-outline-primary" type="submit">Filtrer</button>
+</form>
+<div class="pg-table-cadre"><table class="table table-hover">
+  <thead><tr><th>Médicament</th><th>Catégorie</th><th class="num">Stock total</th><th class="num">Vendable</th><th class="num">Seuil</th><th>Alerte</th></tr></thead>
+  <tbody>{% for m in object_list %}
+    <tr class="{% if m.stock_vendable == 0 %}etat-rupture{% elif m.stock_vendable <= m.seuil_alerte %}etat-faible{% else %}etat-ok{% endif %}">
+      <td><div class="produit">{% include "partials/vignette.html" with med=m taille="petite" %}<a class="fw-semibold" href="{{ m.get_absolute_url }}">{{ m }}</a></div></td><td>{{ m.categorie }}</td>
+      <td class="num">{{ m.stock_total }}</td><td class="num fw-semibold">{{ m.stock_vendable }}</td><td class="num">{{ m.seuil_alerte }}</td>
+      <td>{% if m.stock_vendable == 0 %}<span class="pastille rouge">Rupture</span>{% elif m.stock_vendable <= m.seuil_alerte %}<span class="pastille ambre">Stock faible</span>{% else %}<span class="pastille">Suffisant</span>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="6" class="vide">Aucun médicament ne correspond.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

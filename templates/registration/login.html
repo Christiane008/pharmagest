@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titre %}Connexion{% endblock %}
+{% block public %}
+<div class="pg-connexion">
+  <div class="pg-bloc">
+    <div class="d-flex align-items-center gap-2 mb-3" style="color: var(--pg-vert)">
+      <span class="pg-croix" style="filter: invert(26%) sepia(57%) saturate(600%) hue-rotate(118deg)"></span>
+      <span class="fs-4 fw-semibold">PharmaGest</span>
+    </div>
+    <h1 class="h5 mb-3">Connexion</h1>
+    {% if form.errors %}<div class="alert alert-danger py-2">Identifiant ou mot de passe incorrect, ou compte désactivé.</div>{% endif %}
+    <form method="post">{% csrf_token %}
+      <label class="form-label" for="id_username">Identifiant</label>
+      <input class="form-control mb-3" id="id_username" name="username" autocomplete="username" autofocus required value="{{ form.username.value|default:'' }}">
+      <label class="form-label" for="id_password">Mot de passe</label>
+      <input class="form-control mb-3" id="id_password" type="password" name="password" autocomplete="current-password" required>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn btn-primary w-100" type="submit">Se connecter</button>
+    </form>
+    <a class="d-block mt-3 small" href="{% url 'password_reset' %}">Mot de passe oublié ?</a>
+  </div>
+</div>
+{% endblock %}

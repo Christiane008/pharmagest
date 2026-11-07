@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% load pharmagest %}
+{% block titre %}{{ object.numero }}{% endblock %}
+{% block contenu %}
+<div class="pg-entete">
+  <div><h1>Commande {{ object.numero }}</h1>
+    <p class="sous-titre"><a href="{{ object.fournisseur.get_absolute_url }}">{{ object.fournisseur }}</a> · créée le {{ object.cree_le|date:"d/m/Y" }} par {{ object.cree_par }}{% if object.valide_par %} · validée par {{ object.valide_par }}{% endif %} · {% include "achats/_statut.html" with s=object.statut l=object.get_statut_display %}</p></div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-primary" href="{% url 'pdf_bon_commande' object.pk %}" target="_blank">Bon de commande (PDF)</a>
+    {% if object.est_modifiable and perms.achats.add_commandeachat %}<a class="btn btn-outline-primary" href="{% url 'achats:commande_modifier' object.pk %}">Modifier</a>{% endif %}
+    {% if perms.achats.valider_commande %}
+      {% if object.est_modifiable %}<form method="post" action="{% url 'achats:commande_action' object.pk 'valider' %}">{% csrf_token %}<button class="btn btn-primary" onclick="return confirm('Valider et envoyer la commande ?')">Valider la commande</button></form>{% endif %}
+      {% if object.statut == 'brouillon' or object.statut == 'commandee' %}<form method="post" action="{% url 'achats:commande_action' object.pk 'annuler' %}">{% csrf_token %}<button class="btn btn-outline-danger" onclick="return confirm('Annuler cette commande ?')">Annuler la commande</button></form>{% endif %}
+    {% endif %}
+    {% if object.peut_etre_receptionnee and perms.achats.add_receptionachat %}<a class="btn btn-primary" href="{% url 'achats:reception_creer' object.pk %}">Réceptionner</a>{% endif %}
+  </div>
+</div>
+<div class="pg-bloc"><h2>Lignes</h2>
+  <div class="pg-table-cadre"><table class="table">
+    <thead><tr><th>Médicament</th><th class="num">Commandé</th><th class="num">Reçu</th><th class="num">Reste</th><th class="num">P.U.</th><th class="num">Montant</th></tr></thead>
+    <tbody>{% for l in object.lignes.all %}<tr><td><div class="produit">{% include "partials/vignette.html" with med=l.medicament taille="petite" %}<span>{{ l.medicament }}</span></div></td><td class="num">{{ l.quantite_commandee }}</td><td class="num">{{ l.quantite_recue }}</td><td class="num">{{ l.reste_a_recevoir }}</td><td class="num">{{ l.prix_achat_unitaire|ar }}</td><td class="num">{{ l.montant|ar }}</td></tr>{% endfor %}
+    <tr><td colspan="5" class="text-end fw-semibold">Total</td><td class="num fw-semibold">{{ object.total|ar }}</td></tr></tbody>
+  </table></div>
+  {% if object.notes %}<p class="mt-2 mb-0 text-secondary">Notes : {{ object.notes }}</p>{% endif %}
+</div>
+<div class="pg-bloc"><h2>Réceptions</h2>
+  <div class="pg-table-cadre"><table class="table">
+    <thead><tr><th>N°</th><th>Créée le</th><th>Statut</th><th class="num">Montant</th></tr></thead>
+    <tbody>{% for r in object.receptions.all %}<tr><td><a href="{{ r.get_absolute_url }}">{{ r.numero }}</a></td><td>{{ r.cree_le|date:"d/m/Y H:i" }}</td>
+      <td><span class="pastille {% if r.statut == 'brouillon' %}ambre{% endif %}">{{ r.get_statut_display }}</span></td><td class="num">{{ r.total|ar }}</td></tr>
+    {% empty %}<tr><td colspan="4" class="vide">Aucune réception pour l'instant.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}

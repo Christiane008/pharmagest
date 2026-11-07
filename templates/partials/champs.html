@@ -1,0 +1,25 @@
+{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+{% for f in form.hidden_fields %}{{ f }}{% endfor %}
+{% for f in form.visible_fields %}
+<div class="mb-3">
+  {% if f.widget_type == 'checkbox' %}
+    <div class="form-check">
+      <input type="checkbox" class="form-check-input" name="{{ f.html_name }}" id="{{ f.id_for_label }}" {% if f.value %}checked{% endif %}>
+      <label class="form-check-label" for="{{ f.id_for_label }}">{{ f.label }}</label>
+    </div>
+  {% elif f.widget_type == 'checkboxselectmultiple' %}
+    <div class="form-label">{{ f.label }}</div>
+    {% for c in f %}<div class="form-check">{{ c.tag }} <label class="form-check-label" for="{{ c.id_for_label }}">{{ c.choice_label }}</label></div>{% endfor %}
+  {% else %}
+    <label class="form-label" for="{{ f.id_for_label }}">{{ f.label }}{% if f.field.required %} <span class="text-danger" aria-hidden="true">*</span>{% endif %}</label>
+    {% if f.widget_type == 'select' %}{{ f.as_widget|safe }}{% else %}{{ f }}{% endif %}
+  {% endif %}
+  {% if f.help_text %}<div class="form-text">{{ f.help_text|safe }}</div>{% endif %}
+  {% if f.errors %}<ul class="errorlist">{% for e in f.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+</div>
+{% endfor %}
+<script>
+  document.querySelectorAll('.pg-bloc form input:not([type=checkbox]):not([type=hidden]):not([type=file]), .pg-bloc form textarea').forEach(e => e.classList.add('form-control'));
+  document.querySelectorAll('.pg-bloc form input[type=file]').forEach(e => e.classList.add('form-control'));
+  document.querySelectorAll('.pg-bloc form select').forEach(e => e.classList.add('form-select'));
+</script>

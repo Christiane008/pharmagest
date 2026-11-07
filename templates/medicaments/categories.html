@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titre %}Catégories{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><h1>Catégories</h1>
+  {% if perms.medicaments.add_categorie %}<a class="btn btn-primary" href="{% url 'medicaments:categorie_creer' %}">Ajouter une catégorie</a>{% endif %}</div>
+{% include "partials/recherche.html" with placeholder="Nom de catégorie" %}
+<div class="pg-table-cadre"><table class="table">
+  <thead><tr><th>Catégorie</th><th>Description</th><th class="num">Médicaments</th><th></th></tr></thead>
+  <tbody>{% for c in object_list %}
+    <tr><td class="fw-semibold">{{ c.nom }}</td><td class="text-secondary">{{ c.description|truncatechars:90 }}</td><td class="num">{{ c.nb }}</td>
+      <td class="text-end text-nowrap">
+        {% if perms.medicaments.change_categorie %}<a class="btn btn-sm btn-outline-primary" href="{% url 'medicaments:categorie_modifier' c.pk %}">Modifier</a>{% endif %}
+        {% if perms.medicaments.delete_categorie %}{% if c.nb %}<span class="small text-secondary ms-2">utilisée</span>{% else %}
+        <form class="d-inline" method="post" action="{% url 'medicaments:categorie_supprimer' c.pk %}" onsubmit="return confirm('Supprimer cette catégorie ?')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Supprimer</button></form>{% endif %}{% endif %}
+      </td></tr>
+  {% empty %}<tr><td colspan="4" class="vide">Aucune catégorie.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

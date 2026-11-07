@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% load pharmagest %}
+{% block titre %}Ventes{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><h1>Historique des ventes</h1>{% if perms.ventes.add_vente %}<a class="btn btn-primary" href="{% url 'ventes:nouvelle' %}">Ouvrir la caisse</a>{% endif %}</div>
+<form method="get" class="pg-filtres">
+  <input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="N° de vente ou client" aria-label="Rechercher">
+  <select class="form-select" name="statut" aria-label="Statut"><option value="">Validées et annulées</option>
+    <option value="validee" {% if request.GET.statut == "validee" %}selected{% endif %}>Validées</option>
+    <option value="annulee" {% if request.GET.statut == "annulee" %}selected{% endif %}>Annulées</option></select>
+  <select class="form-select" name="jour" aria-label="Période"><option value="">Toutes les dates</option><option value="aujourdhui" {% if request.GET.jour %}selected{% endif %}>Aujourd'hui</option></select>
+  <button class="btn btn-outline-primary" type="submit">Filtrer</button>
+</form>
+<div class="pg-table-cadre"><table class="table table-hover">
+  <thead><tr><th>N°</th><th>Date</th><th>Client</th><th>Caissier</th><th>Statut</th><th class="num">Total</th></tr></thead>
+  <tbody>{% for v in object_list %}<tr class="{% if v.statut == 'annulee' %}etat-bloque{% else %}etat-ok{% endif %}"><td><a class="fw-semibold" href="{{ v.get_absolute_url }}">{{ v.numero }}</a></td><td>{{ v.valide_le|date:"d/m/Y H:i" }}</td>
+    <td>{{ v.client|default:"Comptoir" }}</td><td>{{ v.caissier }}</td><td><span class="pastille {% if v.statut == 'annulee' %}rouge{% endif %}">{{ v.get_statut_display }}</span></td><td class="num">{{ v.total|ar }}</td></tr>
+  {% empty %}<tr><td colspan="6" class="vide">Aucune vente.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

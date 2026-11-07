@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% load pharmagest %}
+{% block titre %}{{ object.numero }}{% endblock %}
+{% block contenu %}
+<div class="pg-entete">
+  <div><h1>Réception {{ object.numero }}</h1>
+    <p class="sous-titre">Commande <a href="{{ object.commande.get_absolute_url }}">{{ object.commande.numero }}</a> · {{ object.commande.fournisseur }} ·
+    {% if object.statut == 'validee' %}<span class="pastille">Validée le {{ object.recu_le|date:"d/m/Y H:i" }} par {{ object.recu_par }}</span>{% else %}<span class="pastille ambre">Brouillon : pas encore en stock</span>{% endif %}</p></div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="{% url 'pdf_bon_reception' object.pk %}" target="_blank">Bon de réception (PDF)</a>
+    {% if object.statut == 'brouillon' %}
+      {% if perms.achats.valider_reception %}<form method="post" action="{% url 'achats:reception_valider' object.pk %}">{% csrf_token %}<button class="btn btn-primary" onclick="this.disabled=true;this.form.submit();">Valider : faire entrer en stock</button></form>{% endif %}
+      {% if perms.achats.add_receptionachat %}<form method="post" action="{% url 'achats:reception_supprimer' object.pk %}" onsubmit="return confirm('Supprimer ce brouillon ?')">{% csrf_token %}<button class="btn btn-outline-danger">Supprimer le brouillon</button></form>{% endif %}
+    {% endif %}
+  </div>
+</div>
+<div class="pg-table-cadre"><table class="table">
+  <thead><tr><th>Médicament</th><th>Lot</th><th>Péremption</th><th class="num">Quantité</th><th class="num">Montant</th></tr></thead>
+  <tbody>{% for l in object.lignes.all %}<tr><td>{{ l.ligne_achat.medicament }}</td><td>{% if l.lot %}<a href="{{ l.lot.get_absolute_url }}">{{ l.numero_lot }}</a>{% else %}{{ l.numero_lot }}{% endif %}</td>
+    <td>{{ l.date_peremption|date:"d/m/Y" }}</td><td class="num">{{ l.quantite_recue }}</td><td class="num">{{ l.montant|ar }}</td></tr>{% endfor %}
+  <tr><td colspan="4" class="text-end fw-semibold">Total</td><td class="num fw-semibold">{{ object.total|ar }}</td></tr></tbody>
+</table></div>
+{% endblock %}

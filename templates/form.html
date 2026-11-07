@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block titre %}{{ titre }}{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><h1>{{ titre }}</h1></div>
+<div class="pg-bloc" style="max-width: 760px">
+  <form method="post" {% if multipart %}enctype="multipart/form-data"{% endif %} novalidate>
+    {% csrf_token %}
+    {% include "partials/champs.html" %}
+    <div class="d-flex gap-2 mt-3">
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+      <a class="btn btn-outline-secondary" href="javascript:history.back()">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

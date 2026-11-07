@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titre %}Utilisateurs{% endblock %}
+{% block contenu %}
+<div class="pg-entete"><h1>Utilisateurs</h1>
+  {% if perms.auth.add_user %}<a class="btn btn-primary" href="{% url 'utilisateurs:creer' %}">Créer un compte</a>{% endif %}</div>
+{% include "partials/recherche.html" with placeholder="Identifiant ou nom" %}
+<div class="pg-table-cadre"><table class="table">
+  <thead><tr><th>Identifiant</th><th>Nom</th><th>Rôles</th><th>Dernière connexion</th><th>Statut</th><th></th></tr></thead>
+  <tbody>{% for u in object_list %}
+    <tr class="{% if u.is_active %}etat-ok{% else %}etat-epuise{% endif %}"><td class="fw-semibold">{{ u.username }}</td><td>{{ u.get_full_name }}</td>
+      <td>{% for g in u.groups.all %}<span class="pastille neutre me-1">{{ g }}</span>{% empty %}<span class="text-secondary small">aucun</span>{% endfor %}</td>
+      <td>{{ u.last_login|date:"d/m/Y H:i"|default:"jamais" }}</td>
+      <td>{% if u.is_active %}<span class="pastille">Actif</span>{% else %}<span class="pastille rouge">Désactivé</span>{% endif %}</td>
+      <td class="text-end text-nowrap">{% if perms.auth.change_user %}
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'utilisateurs:modifier' u.pk %}">Modifier</a>
+        {% if u != user %}<form class="d-inline" method="post" action="{% url 'utilisateurs:basculer' u.pk %}" onsubmit="return confirm('Confirmer ?')">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">{% if u.is_active %}Désactiver{% else %}Activer{% endif %}</button></form>{% endif %}
+      {% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

@@ -1,0 +1,4 @@
+{% extends "base.html" %}
+{% block titre %}Page introuvable{% endblock %}
+{% block contenu %}<div class="pg-bloc" style="max-width:560px"><h1 class="h4">Page introuvable</h1><p>L'élément demandé n'existe pas ou a été supprimé.</p><a class="btn btn-primary" href="{% url 'tableau_de_bord' %}">Retour au tableau de bord</a></div>{% endblock %}
+{% block public %}<div class="pg-connexion"><div class="pg-bloc"><h1 class="h5">Page introuvable</h1><a href="{% url 'login' %}">Se connecter</a></div></div>{% endblock %}

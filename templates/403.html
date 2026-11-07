@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titre %}Accès refusé{% endblock %}
+{% block contenu %}
+<div class="pg-bloc" style="max-width: 560px">
+  <h1 class="h4">Accès refusé</h1>
+  <p>Votre rôle ne donne pas accès à cette fonction. Si vous en avez besoin, demandez à l'administrateur d'ajuster vos permissions.</p>
+  <a class="btn btn-primary" href="{% url 'tableau_de_bord' %}">Retour au tableau de bord</a>
+</div>
+{% endblock %}
+{% block public %}<div class="pg-connexion"><div class="pg-bloc"><h1 class="h5">Accès refusé</h1><a href="{% url 'login' %}">Se connecter</a></div></div>{% endblock %}
